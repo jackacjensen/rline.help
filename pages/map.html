@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>R-Line Tramway Map</title>
+    <link rel="icon" type="image/x-icon" href="/assets/images/R-Line logo 2.0.ico">
+    <style>
+        @font-face {
+            font-family: 'ButtonFOnt';
+            src: url('/assets/fonts/Navitism-Medium.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'BodyFont';
+            src: url('/assets/fonts/MinionPro-Regular.woff2') format('woff2');
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+        }
+        #mapContainer {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            background-color: #222;
+            background-color: white;
+        }
+        #mapCanvas {
+            position: absolute;
+            touch-action: none;
+            cursor: grab;
+        }
+        .dropdown {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+        }
+        .dropdown button {
+            background-color: #c0392b;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            font-family: ButtonFont;
+            font-size: 1.5em;
+            border-radius: 0px;
+        }
+        .dropdown button:hover {
+            background-color: #e74c3c;
+            text-decoration: underline;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 55px;
+            right: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            width: 200px;
+        }
+        .dropdown-content img {
+            width: 100%;
+            height: auto;
+            border-radius: 0px;
+            display: block;
+        }
+        .button {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            display: inline-block;
+            background-color: #414139;
+            color: white;
+            padding: 10px 15px;
+            font-family: ButtonFont;
+            font-size: 1em;
+            text-decoration: none;
+            border-radius: 0px;
+            transition: background-color 0.3s ease;
+        }
+        .button:hover {
+            background-color: #5f5f6b;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dropdown">
+    <button onclick="toggleDropdown()">Reference</button>
+    <div class="dropdown-content" id="dropdownContent">
+        <img src="/assets/images/Rivel 3.3 tramways print key.jpg" alt="Reference">
+    </div>
+    <a href="/index.html" class="button">Back</a>
+</div>
+
+<div id="mapContainer">
+    <canvas id="mapCanvas"></canvas>
+</div>
+
+<script>
+    function toggleDropdown() {
+        let dropdown = document.getElementById("dropdownContent");
+        dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+    }
+</script>
+
+<div id="mapContainer">
+    <canvas id="mapCanvas"></canvas>
+</div>
+
+<script>
+    const canvas = document.getElementById("mapCanvas");
+    const ctx = canvas.getContext("2d");
+    const mapImage = new Image();
+    mapImage.src = '/assets/images/Rivel 3.3 tramways.jpg';
+
+    let scale = 1.9;
+    let minScale = 1;
+    let maxScale = 4;
+    let offsetX = 0, offsetY = 0;
+    let lastTouchDist = null;
+    let lastTouchCenter = { x: 0, y: 0 };
+
+    mapImage.onload = function () {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        offsetX = -(mapImage.width * scale - canvas.width) / 2;
+        offsetY = -(mapImage.height * scale - canvas.height) / 2;
+
+        drawMap();
+    };
+
+    function drawMap() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.translate(offsetX, offsetY);
+        ctx.scale(scale, scale);
+        ctx.drawImage(mapImage, 0, 0);
+        ctx.restore();
+    }
+
+    function clampPosition() {
+        let maxX = 0;
+        let maxY = 0;
+        let minX = canvas.width - mapImage.width * scale;
+        let minY = canvas.height - mapImage.height * scale;
+
+        offsetX = Math.min(maxX, Math.max(minX, offsetX));
+        offsetY = Math.min(maxY, Math.max(minY, offsetY));
+    }
+    let isDragging = false, startX, startY;
+
+    canvas.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        canvas.style.cursor = "grabbing";
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        let dx = e.clientX - startX;
+        let dy = e.clientY - startY;
+        startX = e.clientX;
+        startY = e.clientY;
+        offsetX += dx;
+        offsetY += dy;
+        clampPosition();
+        drawMap();
+    });
+
+    canvas.addEventListener("mouseup", () => {
+        isDragging = false;
+        canvas.style.cursor = "grab";
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+        isDragging = false;
+    });
+
+    let isTouching = false, touchX, touchY;
+
+    canvas.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 1) {
+            isTouching = true;
+            touchX = e.touches[0].clientX;
+            touchY = e.touches[0].clientY;
+        } else if (e.touches.length === 2) {
+            lastTouchDist = getDistance(e.touches[0], e.touches[1]);
+            lastTouchCenter = getMidPoint(e.touches[0], e.touches[1]);
+        }
+    });
+
+    canvas.addEventListener("touchmove", (e) => {
+        e.preventDefault();
+
+        if (isTouching && e.touches.length === 1) {
+            let dx = e.touches[0].clientX - touchX;
+            let dy = e.touches[0].clientY - touchY;
+            touchX = e.touches[0].clientX;
+            touchY = e.touches[0].clientY;
+            offsetX += dx;
+            offsetY += dy;
+            clampPosition();
+            drawMap();
+        } else if (e.touches.length === 2) {
+            let newDist = getDistance(e.touches[0], e.touches[1]);
+            let newMid = getMidPoint(e.touches[0], e.touches[1]);
+
+            if (lastTouchDist !== null) {
+                let zoomFactor = newDist / lastTouchDist;
+                let newScale = Math.min(maxScale, Math.max(minScale, scale * zoomFactor));
+
+                offsetX = newMid.x - (newMid.x - offsetX) * (newScale / scale);
+                offsetY = newMid.y - (newMid.y - offsetY) * (newScale / scale);
+
+                scale = newScale;
+                lastTouchDist = newDist;
+                lastTouchCenter = newMid;
+
+                clampPosition();
+                drawMap();
+            }
+        }
+    });
+
+    canvas.addEventListener("touchend", () => {
+        isTouching = false;
+        lastTouchDist = null;
+    });
+
+    function getDistance(touch1, touch2) {
+        return Math.sqrt(
+            Math.pow(touch2.clientX - touch1.clientX, 2) +
+            Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+    }
+
+    function getMidPoint(touch1, touch2) {
+        return {
+            x: (touch1.clientX + touch2.clientX) / 2,
+            y: (touch1.clientY + touch2.clientY) / 2
+        };
+    }
+
+    canvas.addEventListener("wheel", (e) => {
+        e.preventDefault();
+
+        let zoomFactor = 1.1;
+        let mouseX = e.clientX;
+        let mouseY = e.clientY;
+
+        if (e.deltaY < 0) {
+            if (scale < maxScale) {
+                scale *= zoomFactor;
+            }
+        } else {
+            if (scale > minScale) {
+                scale /= zoomFactor;
+            }
+        }
+
+        offsetX = mouseX - (mouseX - offsetX) * (scale / (scale / zoomFactor));
+        offsetY = mouseY - (mouseY - offsetY) * (scale / (scale / zoomFactor));
+
+        clampPosition();
+        drawMap();
+    });
+
+    window.addEventListener("resize", () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        drawMap();
+    });
+</script>
+</body>
+</html>
