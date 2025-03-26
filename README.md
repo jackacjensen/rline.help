@@ -10,6 +10,6 @@ The R-Line Tramway system connects all major districts, markets, and industrial 
 *   Check the tram line color and route.
 *   Board at designated stations and enjoy the ride!
 
-[View the Map](/pages/map.html)
+[View the Map](https://rline.help/pages/map.html)
 
 © 2E 452 R-Line Tramway and Canals. All rights reserved.
