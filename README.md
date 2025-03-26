@@ -2,9 +2,7 @@
 
 ### _Take the "R-LINE" and get there on time!_
 
-![alt text](logo)
-
-[logo]: https://github.com/jackacjensen/rline.help/blob/main/assets/images/Rivel%203.3%20tramways.jpg
+![alt text](https://github.com/jackacjensen/rline.help/blob/fe421b094b2b25565cfa9e8002168ec99a359462/assets/images/Rivel%203.3%20tramways.jpg "Logo Title Text 1")
 
 The R-Line Tramway system connects all major districts, markets, and industrial zones. Whether you're heading to the Outer Market, Downtown Center, or Southgate, our trams will get you there efficiently and on time.
 
